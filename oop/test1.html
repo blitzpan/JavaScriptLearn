@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+</head>
+<script>
+var Student={
+	name:'Robot',
+	height:1.2,
+	run:function(){
+		console.log(this.name + " is running...");
+	}
+};
+var xiaoMing = {
+	name:'小明'
+};
+xiaoMing.__proto__=Student;
+console.log(xiaoMing.name);
+xiaoMing.run();
+//////////
+//原型对象
+var Student = {
+	name:'Robot',
+	height:1.2,
+	run:function(){
+		console.log(this.name + ' is running');
+	}
+};
+function createStudent(name){
+	//基于Student原型创建一个新的对象
+	var s = Object.create(Student);
+	//初始化新对象
+	s.name = name;
+	return s;
+}
+var xiaoMing = createStudent('小明');
+xiaoMing.run();
+console.log(xiaoMing.__proto__ === Student);
+////////////////////通过构造函数来创建对象
+function StudentFun(name){
+	this.name = name;
+	this.hello = function(){
+		alert('Hello' + this.name);
+	}
+}
+//上面这只是一个普通的函数，但是如果用new来调用的话，就会返回一个对象
+var xiaoMing = new StudentFun('小明');
+console.log(xiaoMing.name);
+xiaoMing.hello();
+console.log(xiaoMing instanceof StudentFun);
+//比较
+</script>
+<body>
+	面向对象编程
+</body>
+</html>
+
