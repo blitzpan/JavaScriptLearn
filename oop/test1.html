@@ -50,6 +50,40 @@ console.log(xiaoMing.name);
 xiaoMing.hello();
 console.log(xiaoMing instanceof StudentFun);
 //比较
+var xiaoHong = new StudentFun('小红');
+console.log(xiaoMing.name==xiaoHong.name);
+console.log(xiaoMing.hello==xiaoHong.hello);
+//这里发现xiaoMing.name不等于xiaoHong.name，这个我们理解
+//但是xiaoMing.hello也不等于xiaoHong.hello
+/////////////////////////////////////
+//将方法绑定到对象的原型上
+function StudentFun1(name){
+	this.name = name;
+}
+StudentFun1.prototype.hello = function(){
+	alert('hello '+ this.name);
+};
+////////////////////////////////
+//为了防止漏掉new的情况发生，我们创建对象写一个方法，以后直接调这个方法就可以。
+function StudnetFun2(props){
+	this.name = props.name || '匿名';
+	this.grade = props.grade || 1;
+}
+StudnetFun2.prototype.hello=function(){
+	alert('hello' + this.name);
+}
+function createStudent2(props){
+	return new StudnetFun2(props || {})
+}
+var xiaoMing = createStudent2({
+	name:'小明'
+});
+var xiaoHong = createStudent2({
+	name:'小红'	
+});
+console.log(xiaoMing.name);
+console.log(xiaoMing.hello == xiaoHong.hello);
+xiaoHong.hello();
 </script>
 <body>
 	面向对象编程
