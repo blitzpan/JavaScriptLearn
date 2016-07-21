@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>class继承</title>
+</head>
+<script>
+//使用class来编写Student(但是class这个关键字必须在严格模式下运行，就我们目前的现状来看，严格模式编写的js代码会使整个项目都跑不起来了。)
+class Student{
+	constructor(name){
+		this.name = name;
+	}
+	hello(){//注意这个方法没有function关键字
+		alert('Hello,' + this.name + "!");
+	}
+}
+var xiaoMing = new Student('小明');
+xiaoMing.hello();
+//继承
+class PrimaryStudent extends Student{
+	constructor(name,grade){
+		super(name);//用super来调用父类的构造方法
+		this.grade = grade;
+	}
+	myGrade(){
+		alert('I am at grade=' + this.grade);
+	}
+}
+xiaoHong = new PrimaryStudent('小红',38);
+xiaoHong.hello();
+xiaoHong.myGrade();
+</script>
+<body>
+	面向对象编程（class继承）
+</body>
+</html>
+

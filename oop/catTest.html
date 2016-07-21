@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+</head>
+<script>
+//请利用构造函数定义Cat，并让所有的Cat对象有一个name属性，并共享一个方法say()，返回字符串'Hello, xxx!'：
+function Cat(parm){
+	this.name = parm.name || '匿名';
+}
+Cat.prototype.say=function(){
+	console.log('Hello, '+this.name);
+	return 'Hello, '+this.name + "!";
+}
+function createCat(parm){
+	return new Cat(parm);
+}
+var kitty = createCat({name:'Kitty'});
+var doraemon= createCat({name:'哆啦A梦'});
+if (kitty && kitty.name === 'Kitty' && kitty.say && typeof kitty.say === 'function' && kitty.say() === 'Hello, Kitty!' && kitty.say === doraemon.say) {
+    alert('测试通过!');
+} else {
+    alert('测试失败!');
+}
+</script>
+<body>
+	面向对象编程
+</body>
+</html>
+

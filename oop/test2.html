@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>原型继承</title>
+</head>
+<script>
+function Student(props){
+	this.name=props.name || 'unnamed';
+}
+Student.prototype.hello = function(){
+	alert('Hello,' + this.name);
+}
+//定义子类
+function PrimaryStudent(props){
+	//调用Student构造函数，绑定this对象
+	Student.call(this,props);
+	this.grade = props.grade || 1;
+}
+//实现原型的继承链
+inherits(PrimaryStudent, Student);
+
+//绑定其他的方法到PrimaryStudent原型
+PrimaryStudent.prototype.getGrade = function(){
+	return this.grade;
+}
+
+//把继承的过程定义成一个公共的方法
+function inherits(child,parent){
+	var F = function(){};
+	F.prototype = parent.prototype;
+	child.prototype = new F();
+	child.prototype.constructor = child;
+}
+var primStu = new PrimaryStudent({name:'张三',grade:'132'});
+console.log(primStu.getGrade());
+primStu.hello();
+</script>
+<body>
+	面向对象编程（原型继承）
+</body>
+</html>
+
