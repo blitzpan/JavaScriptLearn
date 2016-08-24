@@ -1,8 +1,14 @@
-var game = new Phaser.Game(600, 490, Phaser.AUTO, 'game_div');
+var game = new Phaser.Game(320, 505, Phaser.AUTO, 'game_div');
 
 var main_state = {
 	boot:function(){//启动前的准备
 		this.preload = function(){
+			if(!game.device.desktop){//移动设备自适应
+				this.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
+				this.scale.forcePortrait = true;
+				this.scale.refresh();
+			
+			}
 	        game.load.image('loading','assets/preloader.gif'); //加载进度条图片资源
 	    };
 	    this.create = function(){
@@ -66,6 +72,12 @@ var main_state = {
 	        this.pipeGroup.enableBody = true;
 	        this.ground = game.add.tileSprite(0,game.height-112,game.width,112,'ground'); //地板，这里先不用移动，游戏开始后再动
 	        this.soundFly = this.game.add.audio('fly_sound');
+			this.soundScore = this.game.add.audio('score_sound');
+			this.soundHitPipe = this.game.add.audio('hit_pipe_sound');
+			this.soundHitGround = this.game.add.audio('hit_ground_sound');
+
+			var style = { font: "30px Arial", fill: "#ffffff" };
+			this.scoreText = this.game.add.text(20, 20, "0", style); 
 	        this.bird = game.add.sprite(50,150,'bird'); //鸟
 	        this.bird.animations.add('fly');//添加动画
 	        this.bird.animations.play('fly',12,true);//播放动画
@@ -85,11 +97,12 @@ var main_state = {
 	        game.time.events.loop(900, this.generatePipes, this); //利用时钟事件来循环产生管道
 	        game.time.events.stop(false); //先不要启动时钟
 	        //鼠标点击事件：Phaser中的鼠标、键盘、触摸等交互事件都统一由Input对象来处理。我们需要鼠标点击屏幕后进行响应，可以使用Input对象的onDown属性，该属性指向一个Phaser.Signal对象，我们可以在这个对象上绑定事件，每当鼠标按键下，就会触发一个onDown的信号，如果这个onDown信号对象上绑定了事件，那么这些事件就会执行。
-	        game.input.onDown.addOnce(this.statrGame, this); //点击屏幕后正式开始游戏
+	        game.input.onDown.addOnce(this.startGame, this); //点击屏幕后正式开始游戏
 	    }
-	    this.statrGame = function(){
+	    this.startGame = function(){
 	    	this.gameSpeed = 200; //游戏速度
 	        this.gameIsOver = false; //游戏是否已结束的标志
+
 	        this.hasHitGround = false; //是否已碰撞到地面的标志
 	        this.hasStarted = true; //游戏是否已经开始的标志
 	        this.score = 0; //初始得分
@@ -101,6 +114,16 @@ var main_state = {
 	        game.input.onDown.add(this.fly, this); //给鼠标按下事件绑定鸟的飞翔动作
 	        game.time.events.start(); //启动时钟事件，开始制造管道
 	    }
+		this.stopGame = function(){
+			this.bg.stopScroll();
+			this.ground.stopScroll();
+			this.pipeGroup.forEachExists(function(pipe){
+				pipe.body.velocity.x = 0;
+			}, this);
+			this.bird.animations.stop('fly', 0);
+			game.input.onDown.remove(this.fly, this);
+			game.time.events.stop(true);
+		}
 	    this.fly = function(){
 	        this.bird.body.velocity.y = -350; //飞翔，实质上就是给鸟设一个向上的速度
 	        game.add.tween(this.bird).to({angle:-30}, 100, null, true, 0, 0, false); //上升时头朝上的动画
@@ -134,10 +157,73 @@ var main_state = {
 	        }, this);
 	        return i == 2; //如果 i==2 代表有一组管道已经出了边界，可以回收这组管道了
 	    }
+		this.update = function() {
+			if(!this.hasStarted) return; //游戏未开始,先不执行任何东西
+			if(this.bird.y<0){
+				this.bird.y = 0;
+			}
+			game.physics.arcade.collide(this.bird,this.ground, this.hitGround, null, this); //检测与地面的碰撞
+			game.physics.arcade.overlap(this.bird, this.pipeGroup, this.hitPipe, null, this); //检测与管道的碰撞
+			if(this.bird.angle < 90) this.bird.angle += 2.5; //下降时鸟的头朝下的动画
+			this.pipeGroup.forEachExists(this.checkScore,this); //分数检测和更新
+		}
+		this.checkScore = function(pipe){//负责分数的检测和更新,pipe表示待检测的管道
+			//pipe.hasScored 属性用来标识该管道是否已经得过分
+			//pipe.y<0是指一组管道中的上面那个管道，一组管道中我们只需要检测一个就行了
+			//当管道的x坐标 加上管道的宽度小于鸟的x坐标的时候，就表示已经飞过了管道，可以得分了
+			if(!pipe.hasScored && pipe.y<=0 && pipe.x<=this.bird.x-17-54){
+				pipe.hasScored = true; //标识为已经得过分
+				this.scoreText.text = ++this.score; //更新分数的显示
+				this.soundScore.play(); //得分的音效
+				return true; 
+			}
+			return false;
+		}
+		this.hitGround = function(){
+			if(this.hasHitGround){
+				return;
+			}
+			this.soundHitGround.play();
+			this.hasHitGround = true;
+			this.gameOver(true);
+		}
+		this.hitPipe = function(){
+			if(this.gameIsOver){
+				return;
+			}
+			this.gameOver();
+			this.soundHitPipe.play();
+		}
+		this.gameOver = function(show_text){
+			this.gameIsOver = true;
+			this.stopGame();
+			if(show_text){
+				this.showGameOverText();
+			}
+		}
+		this.showGameOverText = function(){
+			this.scoreText.destroy();
+			game.bestScore = game.bestScore || 0;
+			if(this.score > game.bestScore){
+				game.bestScore = this.score;
+			}
+			this.gameOverGroup = game.add.group();
+			var gameOverText = this.gameOverGroup.create(game.width/2, 0, 'game_over');//游戏结束图片
+			var scoreboard = this.gameOverGroup.create(game.width/2, 70,'score_board');
+			var currentScoreText = game.add.bitmapText(game.width/2+60, 105, 'flappy_font', this.score+'', 20, this.gameOverGroup);//当前分数
+			var bestScoreText = game.add.bitmapText(game.width/2+60, 153, 'flappy_font', game.bestScore+'', 20, this.gameOverGroup);//最好成绩
+			var replayBtn = game.add.button(game.width/2, 210, 'btn', function(){//replay button
+				game.state.start('play');
+			}, this, null,null,null,null,this.gameOverGroup);
+			gameOverText.anchor.setTo(0.5, 0);
+			scoreboard.anchor.setTo(0.5,0);
+			replayBtn.anchor.setTo(0.5,0);
+			this.gameOverGroup.y = 30;
+
+		}
 	},
     create: function() {},
 
-    update: function() {},
     
     
  

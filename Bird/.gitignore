@@ -3,3 +3,4 @@
 .classpath
 WebContent/META-INF
 WebContent/WEB-INF/classes
+/bin/
