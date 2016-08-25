@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>html5 涂鸦跳跃</title>
+	<script src="../js/phaser2.6.1.min.js"></script>
+</head>
+<body>
+<script>
+var game = new Phaser.Game(640,480,Phaser.AUTO,'');
+var boot = function(){
+    this.preload = function(){
+        console.log('boot.preload');
+        if(!game.device.desktop){
+            this.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
+            this.scale.refresh();
+        }
+        game.load.image('loading','assets/img/preloader.gif');
+    },
+    this.create = function(){
+        console.log('boot.create');
+        game.state.start('Game');
+    }
+}
+var JumpGame = function(){
+	this.bg = null;
+	this.player = null;
+	this.facing = 'left';
+	this.score = 0;
+};
+JumpGame.prototype = {
+	init:function(){
+        console.log('init');
+	},
+	preload:function(){
+		console.log('preload');	
+        var preloadSprite = game.add.sprite(50,game.height/2,'loading');
+        game.load.setPreloadSprite(preloadSprite);
+        game.load.audio('rocket','assets/sounds/rocket.mp3');
+	},
+	create:function(){
+		   
+	},
+    update:function(){
+           
+           
+    }
+}
+game.state.add('Game', JumpGame, false);
+game.state.add('boot', boot, true);
+
+</script>
+</body>
+</html>
