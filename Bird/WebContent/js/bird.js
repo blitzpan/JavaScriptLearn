@@ -79,11 +79,13 @@ var main_state = {
 			var style = { font: "30px Arial", fill: "#ffffff" };
 			this.scoreText = this.game.add.text(20, 20, "0", style); 
 	        this.bird = game.add.sprite(50,150,'bird'); //鸟
+			
 	        this.bird.animations.add('fly');//添加动画
 	        this.bird.animations.play('fly',12,true);//播放动画
 	        this.bird.anchor.setTo(0.5, 0.5); //设置中心点
 	        //只有开启了对象的物理系统，该对象才具有物理特性，开启了物理系统后，对象的body属性指向该对象拥有的物理系统，所有与物理相关的属性或方法都必须在body上进行操作
 	        game.physics.enable(this.bird,Phaser.Physics.ARCADE); //开启鸟的物理系统（默认的游戏中的每个对象的物理系统是关闭的）
+			this.bird.body.collideWorldBounds = true;
 	        this.bird.body.gravity.y = 0; //鸟的重力,未开始游戏，先让重力为0，不然鸟会掉下来
 	        game.physics.enable(this.ground,Phaser.Physics.ARCADE);//开启地面的物理系统
 	        this.ground.body.immovable = true; //让地面在物理环境中固定不动
@@ -159,9 +161,6 @@ var main_state = {
 	    }
 		this.update = function() {
 			if(!this.hasStarted) return; //游戏未开始,先不执行任何东西
-			if(this.bird.y<0){
-				this.bird.y = 0;
-			}
 			game.physics.arcade.collide(this.bird,this.ground, this.hitGround, null, this); //检测与地面的碰撞
 			game.physics.arcade.overlap(this.bird, this.pipeGroup, this.hitPipe, null, this); //检测与管道的碰撞
 			if(this.bird.angle < 90) this.bird.angle += 2.5; //下降时鸟的头朝下的动画
