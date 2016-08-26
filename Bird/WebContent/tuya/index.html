@@ -7,7 +7,7 @@
 </head>
 <body>
 <script>
-var game = new Phaser.Game(640,480,Phaser.AUTO,'');
+var game = new Phaser.Game(310,480,Phaser.AUTO,'');
 var boot = function(){
     this.preload = function(){
         console.log('boot.preload');
@@ -19,8 +19,41 @@ var boot = function(){
     },
     this.create = function(){
         console.log('boot.create');
-        game.state.start('Game');
+        game.state.start('menu');
     }
+}
+var menu = function(){
+    this.preload = function(){
+		var preloadSprite = game.add.sprite(50,game.height/2,'loading');
+        game.load.setPreloadSprite(preloadSprite);
+        this.load.audio('rocket','assets/sounds/rocket.mp3');
+		this.load.image('bg','assets/img/bck.png');
+		this.load.image('player','assets/img/lik_right.png');   
+		this.load.image('menu','assets/img/main_menu2.png');   
+		this.load.image('block0','assets/img/block0.jpg');   
+		this.load.image('begin','assets/img/begin.png');   
+	},
+    this.create = function(){
+		this.physics.startSystem(Phaser.Physics.ARCADE);
+        console.log('boot.create');
+		this.add.sprite(0,0,'menu');
+		this.begin = this.add.sprite(25, 120, 'begin');
+		this.block0 = this.add.sprite(40, game.height - 50, 'block0');
+		this.block0.anchor.setTo(0.5, 0.5);
+		this.block0.enableBody = true;
+		this.physics.enable(this.block0);
+		this.block0.body.immovable = true;
+		this.player =  this.add.sprite(45, game.height - 150, 'player');
+		this.player.anchor.setTo(0.5, 0.5);
+		this.physics.enable(this.player);
+		this.player.body.collideWorldBounds = true;
+		this.player.body.gravity.y = 400;
+		this.player.body.bounce.y = 1;
+
+    }
+	this.update = function(){
+		this.physics.arcade.collide(this.player, this.block0);
+	}
 }
 var JumpGame = function(){
 	this.bg = null;
@@ -34,11 +67,11 @@ JumpGame.prototype = {
 	},
 	preload:function(){
 		console.log('preload');	
-        var preloadSprite = game.add.sprite(50,game.height/2,'loading');
-        game.load.setPreloadSprite(preloadSprite);
-        game.load.audio('rocket','assets/sounds/rocket.mp3');
+
 	},
 	create:function(){
+		this.bg = this.add.sprite(0,0,'bg');
+		this.player = this.add.sprite(100,100,'player');
 		   
 	},
     update:function(){
@@ -48,6 +81,7 @@ JumpGame.prototype = {
 }
 game.state.add('Game', JumpGame, false);
 game.state.add('boot', boot, true);
+game.state.add('menu', menu, true);
 
 </script>
 </body>
