@@ -36,7 +36,7 @@
     PhaserGame.prototype = {
 
         init: function () {
-		
+
             this.game.renderer.renderSession.roundPixels = true;
 
             this.world.resize(640*3, 480);
@@ -72,29 +72,33 @@
             this.trees = this.add.tileSprite(0, 364, 640, 116, 'trees');
             this.trees.fixedToCamera = true;
 
-            //  Platforms that don't move
-            this.stationary = this.add.physicsGroup();
-
-            this.stationary.create(0, 380, 'platform');
-            this.stationary.create(632, 220, 'platform');
-            this.stationary.create(1100, 300, 'platform');
-
-            this.stationary.setAll('body.allowGravity', false);
-            this.stationary.setAll('body.immovable', true);
-
+      
             //  Platforms that move
             this.clouds = this.add.physicsGroup();
 
-            var cloud1 = new CloudPlatform(this.game, 300, 380, 'cloud-platform', this.clouds);
-/*
+            var cloud1 = new CloudPlatform(this.game, 300, 450, 'cloud-platform', this.clouds);
+
             cloud1.addMotionPath([
                 { x: "+200", xSpeed: 2000, xEase: "Linear", y: "-200", ySpeed: 2000, yEase: "Sine.easeIn" },
                 { x: "-200", xSpeed: 2000, xEase: "Linear", y: "-200", ySpeed: 2000, yEase: "Sine.easeOut" },
                 { x: "-200", xSpeed: 2000, xEase: "Linear", y: "+200", ySpeed: 2000, yEase: "Sine.easeIn" },
                 { x: "+200", xSpeed: 2000, xEase: "Linear", y: "+200", ySpeed: 2000, yEase: "Sine.easeOut" }
             ]);
-*/
-            
+
+            var cloud2 = new CloudPlatform(this.game, 800, 96, 'cloud-platform', this.clouds);
+
+            cloud2.addMotionPath([
+                { x: "+0", xSpeed: 2000, xEase: "Linear", y: "+300", ySpeed: 2000, yEase: "Sine.easeIn" },
+                { x: "-0", xSpeed: 2000, xEase: "Linear", y: "-300", ySpeed: 2000, yEase: "Sine.easeOut" }
+            ]);
+
+            var cloud3 = new CloudPlatform(this.game, 1300, 290, 'cloud-platform', this.clouds);
+
+            cloud3.addMotionPath([
+                { x: "+500", xSpeed: 4000, xEase: "Expo.easeIn", y: "-200", ySpeed: 3000, yEase: "Linear" },
+                { x: "-500", xSpeed: 4000, xEase: "Expo.easeOut", y: "+200", ySpeed: 3000, yEase: "Linear" }
+            ]);
+
             //  The Player
             this.player = this.add.sprite(32, 0, 'dude');
 
@@ -116,11 +120,12 @@
         },
 
         customSep: function (player, platform) {
+
             if (!this.locked && player.body.velocity.y > 0)
             {
                 this.locked = true;
                 this.lockedTo = platform;
-    
+                platform.playerLocked = true;
 
                 player.body.velocity.y = 0;
             }
@@ -164,9 +169,7 @@
                     this.player.body.velocity.y = 0;
                 }
             }
-try{
-console.log(this.player.body.velocity.y);
-}catch(e){}
+
             if (this.willJump)
             {
                 this.willJump = false;
@@ -187,7 +190,7 @@ console.log(this.player.body.velocity.y);
             if (this.wasLocked)
             {
                 this.wasLocked = false;
-
+                this.lockedTo.playerLocked = false;
                 this.lockedTo = null;
             }
 
@@ -198,7 +201,6 @@ console.log(this.player.body.velocity.y);
             this.background.tilePosition.x = -(this.camera.x * 0.7);
             this.trees.tilePosition.x = -(this.camera.x * 0.9);
 
-            this.physics.arcade.collide(this.player, this.stationary);
             this.physics.arcade.collide(this.player, this.clouds, this.customSep, null, this);
 
             //  Do this AFTER the collide check, or we won't have blocked/touching set
@@ -279,7 +281,7 @@ console.log(this.player.body.velocity.y);
         this.body.allowGravity = false;
         this.body.immovable = true;
 
-
+        this.playerLocked = false;
 
         group.add(this);
 
@@ -327,7 +329,7 @@ console.log(this.player.body.velocity.y);
 
     </script>
 
-   
+    <a href="http://phaser.io"><img src="http://files.phaser.io.s3.amazonaws.com/codingtips/issue004/phaser-tips-header1.png" title="Phaser Coding Tips Weekly" style="margin-top: 8px" /></a>
 
 </body>
 </html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>html5 涂鸦跳跃</title>
+	<script src="../js/phaser2.6.1.min.js"></script>
+</head>
+<body>
+<script>
+var game = new Phaser.Game(310,480,Phaser.AUTO,'');
+var boot = function(){
+    this.preload = function(){
+        console.log('boot.preload');
+        if(!game.device.desktop){
+            this.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
+            this.scale.refresh();
+        }
+        game.load.image('loading','assets/img/preloader.gif');
+    },
+    this.create = function(){
+        console.log('boot.create');
+        game.state.start('menu');
+    }
+}
+var menu = function(){
+    this.preload = function(){
+		var preloadSprite = game.add.sprite(50,game.height/2,'loading');
+        game.load.setPreloadSprite(preloadSprite);
+        this.load.audio('rocket','assets/sounds/rocket.mp3');
+		this.load.image('bg','assets/img/bck.png');
+		this.load.spritesheet('player','assets/img/player.png', 46, 45, 2);   
+		this.load.image('menu','assets/img/main_menu2.png');   
+		this.load.image('block0','assets/img/block0.jpg');   
+		this.load.image('begin','assets/img/begin.png');   
+	},
+    this.create = function(){
+		this.physics.startSystem(Phaser.Physics.ARCADE);
+        console.log('boot.create');
+		this.add.sprite(0,0,'menu');
+		this.begin = this.add.button(25, 120, 'begin',function(){
+			game.state.start('Game');
+		});
+		this.block0 = this.add.sprite(40, game.height - 50, 'block0');
+		this.block0.anchor.setTo(0.5, 0.5);
+		this.block0.enableBody = true;
+		this.physics.enable(this.block0);
+		this.block0.body.immovable = true;
+		this.player =  this.add.sprite(45, game.height - 150, 'player');
+		this.player.anchor.setTo(0.5, 0.5);
+		this.physics.enable(this.player);
+		this.player.body.collideWorldBounds = true;
+		this.player.body.gravity.y = 400;
+		this.player.body.bounce.y = 1;
+
+    }
+	this.update = function(){
+		this.physics.arcade.collide(this.player, this.block0);
+		if(this.player.body.touching.down){
+			this.player.frame = 1;
+		}else{
+			this.player.frame = 0;
+		}
+	}
+}
+var JumpGame = function(){
+	this.bg = null;
+	this.player = null;
+	this.facing = 'left';
+	this.score = 0;
+};
+JumpGame.prototype = {
+	init:function(){
+        console.log('init');
+	},
+	preload:function(){
+		console.log('preload');	
+
+	},
+	create:function(){
+		this.physics.startSystem(Phaser.Physics.ARCADE);
+		this.bg = this.add.tileSprite(0,0,game.width, game.height,'bg');
+		this.bg.autoScroll(0, 10);
+		this.player = this.add.sprite(100,200,'player');
+		this.physics.enable(this.player);
+		this.player.body.collideWorldBounds = true;
+		this.player.body.gravity.y = 400;
+		this.player.body.bounce.y = 1;  
+		this.blocks = this.add.group();//障碍的集合
+		//this.blocks = this.add.physicsGroup();//障碍的集合
+		this.physics.enable(this.blocks);
+		this.blocks.enableBody = true;
+		this.time.events.loop(10000, this.createBlock, this);
+		this.initGame();
+	},
+    update:function(){
+		if(this.player.body.touching.down){
+			this.player.frame = 1;
+		}else{
+			this.player.frame = 0;
+		}       
+		this.physics.arcade.collide(this.player, this.blocks);
+    },
+
+	initGame:function(){
+		var c = game.height / 200;
+		for(var i=0; i<c; i++){
+			this.createBlock(Math.random()*(game.width-57), i*200);
+		}
+	},
+	createBlock:function(x, y){
+		x = x || Math.random() * (game.width -57);
+		y = y || 0;
+		var block0 = this.blocks.create(x , y, 'block0');
+		block0.body.immovable = true;
+		this.blocks.setAll('body.velocity.y', 10);
+		this.blocks.setAll('checkWorldBounds', true);//边界检测
+		this.blocks.setAll('outOfBoundsKill', true);//超出边界自动kill
+	}
+}
+game.state.add('Game', JumpGame, false);
+game.state.add('boot', boot, true);
+game.state.add('menu', menu, true);
+
+</script>
+</body>
+</html>

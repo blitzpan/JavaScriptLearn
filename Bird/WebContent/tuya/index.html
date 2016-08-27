@@ -8,6 +8,14 @@
 <body>
 <script>
 var game = new Phaser.Game(310,480,Phaser.AUTO,'');
+var constant={
+    'player':null,
+    'broken.downS':50,//the broken y speed
+    'block.height':15,
+    'block.width':57,
+    'upS' : -(game.height-50),//the player up speed
+    'spring.ups':-(game.height-50 + 200),//the spring when player touched spring
+}
 var boot = function(){
     this.preload = function(){
         console.log('boot.preload');
@@ -26,19 +34,24 @@ var menu = function(){
     this.preload = function(){
 		var preloadSprite = game.add.sprite(50,game.height/2,'loading');
         game.load.setPreloadSprite(preloadSprite);
-        this.load.audio('rocket','assets/sounds/rocket.mp3');
 		this.load.image('bg','assets/img/bck.png');
-		this.load.spritesheet('player','assets/img/player.png', 46, 45, 2);   
 		this.load.image('menu','assets/img/main_menu2.png');   
+        this.load.image('begin','assets/img/begin.png');   
+		this.load.image('again','assets/img/again.png');
+		this.load.image('options','assets/img/options.png');
+		this.load.spritesheet('player','assets/img/player.png', 46, 45, 2);   
 		this.load.image('block0','assets/img/block0.jpg');   
-		this.load.image('begin','assets/img/begin.png');   
+		this.load.spritesheet('broken','assets/img/broken.png', 60, 29, 4);   
+		this.load.image('spring0','assets/img/spring0.png');   
+		this.load.image('spring1','assets/img/spring1.png');   
+		
 	},
     this.create = function(){
 		this.physics.startSystem(Phaser.Physics.ARCADE);
-        console.log('boot.create');
 		this.add.sprite(0,0,'menu');
 		this.begin = this.add.button(25, 120, 'begin',function(){
 			game.state.start('Game');
+			//game.state.start('score');
 		});
 		this.block0 = this.add.sprite(40, game.height - 50, 'block0');
 		this.block0.anchor.setTo(0.5, 0.5);
@@ -66,7 +79,10 @@ var JumpGame = function(){
 	this.bg = null;
 	this.player = null;
 	this.facing = 'left';
-	this.score = 0;
+	this.score = 100;
+    this.locked = false;
+    this.cursors;
+    this.totalHeight = 0;
 };
 JumpGame.prototype = {
 	init:function(){
@@ -78,49 +94,217 @@ JumpGame.prototype = {
 	},
 	create:function(){
 		this.physics.startSystem(Phaser.Physics.ARCADE);
+        this.physics.arcade.gravity.y = 600;
 		this.bg = this.add.tileSprite(0,0,game.width, game.height,'bg');
-		this.bg.autoScroll(0, 10);
-		this.player = this.add.sprite(100,200,'player');
+        var style = {font : '30px Arial', fill : '#ffffff' };
+        this.scoreText = this.game.add.text(10, 10, '0', style);
+
+        this.player = this.add.sprite(game.width/2, 200,'player');
+        this.player.anchor.setTo(0.5, 0);
+        constant.player = this.player;
+
+		this.blocks = this.add.group();//障碍的集合
+		this.blocks.enableBody = true;
+
+        this.brokenBlocks = this.add.group();//断裂的踏板集合
+
+        this.springs = this.add.group();//弹簧的集合
+
+		this.initGame();
+        
 		this.physics.enable(this.player);
 		this.player.body.collideWorldBounds = true;
-		this.player.body.gravity.y = 400;
-		this.player.body.bounce.y = 1;  
-		this.blocks = this.add.group();//障碍的集合
-		//this.blocks = this.add.physicsGroup();//障碍的集合
-		this.physics.enable(this.blocks);
-		this.blocks.enableBody = true;
-		this.time.events.loop(10000, this.createBlock, this);
-		this.initGame();
+        this.cursors = this.input.keyboard.createCursorKeys();
 	},
     update:function(){
+        var height = game.height/2 - this.player.body.top;
+        if(height>0){
+            this.score += height/100;
+            this.scoreText.text = Math.floor(this.score);
+            this.totalHeight += height;
+            if(this.totalHeight>50){
+                this.totalHeight = this.totalHeight % 50;
+                this.createBlock();
+            }
+            this.player.body.y = game.height/2;
+            this.blocks.forEachExists(function(block){
+                block.y += height;
+            }, this);
+            this.brokenBlocks.forEachExists(function(broken){
+                broken.y += height;
+            }, this);
+            this.springs.forEachExists(function(spring){
+                spring.y += height;
+                if(spring.y > game.height){
+                    spring.kill();
+                }
+            }, this);
+        }
 		if(this.player.body.touching.down){
+            console.log('down');
 			this.player.frame = 1;
 		}else{
 			this.player.frame = 0;
 		}       
-		this.physics.arcade.collide(this.player, this.blocks);
-    },
+        //这是碰到游戏区域的底部之后反弹
+        if(this.player.body.blocked.down){
+            console.log('blocked.down');
+            game.state.start('score');
+            this.player.body.velocity.y = constant['upS'];
+        }
+		this.physics.arcade.collide(this.player, this.blocks, this.collideNormal, null, this);
+		this.physics.arcade.collide(this.player, this.brokenBlocks, this.collideBroken, null, this);
+		this.physics.arcade.collide(this.player, this.springs, this.collideSpring, null, this);
+        this.player.body.velocity.x = 0;
+        if(this.cursors.left.isDown){
+            this.player.body.velocity.x = -150;
+        }else if(this.cursors.right.isDown){
+            this.player.body.velocity.x = 150;
+        }
 
+    },
+    collideNormal: function (player, block) {
+        if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
+            player.body.velocity.y = constant['upS'];
+        }else if(player.body.velocity.y>=0){
+            console.log("异常" + (player.body.bottom - block.body.top) + '--' + player.body.velocity.y);
+        }
+    },
+    collideBroken:function(player, block){
+        if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
+            block.play('play');
+            block.body.velocity.y = player.body.velocity.y + 5;
+        }else if(player.body.velocity.y>=0){
+            console.log("异常" + (player.body.bottom - block.body.top) + '--' + player.body.velocity.y);
+        }         
+    },
+    collideSpring: function (player, block) {
+        if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
+            player.body.velocity.y = constant['spring.ups'];
+            this.createBlockByType(block.x, block.y, 'springAfter');
+            block.kill();
+        }else if(player.body.velocity.y>=0){
+            console.log("异常" + (player.body.bottom - block.body.top) + '--' + player.body.velocity.y);
+        }
+    },
+                  
 	initGame:function(){
-		var c = game.height / 200;
-		for(var i=0; i<c; i++){
-			this.createBlock(Math.random()*(game.width-57), i*200);
+		var c = game.height / 50;
+        this.createBlock(game.width/2-57/2, (game.height - 90) );
+        for(var i=1; i<c-1; i++){
+			this.createBlock(Math.random()*(game.width-57), i*50);
 		}
 	},
 	createBlock:function(x, y){
-		x = x || Math.random() * (game.width -57);
+		x = x || Math.random() * (game.width - constant['block.width']) + constant['block.width']/2;
 		y = y || 0;
-		var block0 = this.blocks.create(x , y, 'block0');
-		block0.body.immovable = true;
-		this.blocks.setAll('body.velocity.y', 10);
-		this.blocks.setAll('checkWorldBounds', true);//边界检测
-		this.blocks.setAll('outOfBoundsKill', true);//超出边界自动kill
-	}
-}
-game.state.add('Game', JumpGame, false);
-game.state.add('boot', boot, true);
-game.state.add('menu', menu, true);
+        if(this.score < 100){//normal
+            this.createBlockByType(x, y, 'normal');
+            this.createBlockByType(x, y-constant['block.height'], 'spring');
+        }else if(this.score < 200){//normal + broken
+            this.createBlockByType(x, y, 'normal');
+            if(this.createBlockByType(x, y-constant['block.height'], 'spring')){//create spring
+            
+            }else{//not create spring
+                x = Math.random() * (game.width - 57);
+                this.createBlockByType(x, y, 'broken');
+            }
+        }else{
+            this.createBlockByType(x, y, 'normal');
+            x = Math.random() * (game.width - 57);
+            this.createBlockByType(x, y, 'broken');
+        }
+        this.scoreText.bringToTop();
+        this.player.bringToTop();
+	},
+    createBlockByType:function(x, y, type){
+        if(type == 'normal'){
+            var block0 = this.blocks.getFirstDead(true, x , y, 'block0');
+            block0.anchor.set(0.5, 1);
+            game.physics.arcade.enable(block0);
+            block0.body.immovable = true;
+            block0.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
+            block0.body.customSeparateY = true;
+            block0.body.allowGravity = false;
+            this.blocks.setAll('checkWorldBounds', true);//边界检测
+            this.blocks.setAll('outOfBoundsKill', true);//超出边界自动kill
+        
+        }else if(type=='broken'){
+            if(Math.random()<0.6){
+                return;
+            }
+            var offset = Math.random() * 15 + 15;//这样范围就是15到30
+            if(Math.random() < 0.5){//在上面，
+                offset *= -1;
+            }else{//在下面，值不需要变
+                
+            }
+            var broken = this.brokenBlocks.getFirstDead(true, x , y + offset, 'broken', 0);
+            broken.anchor.set(0.5, 1);
+            broken.animations.add('play', null, 12, false, true);
+            game.physics.arcade.enable(broken);
+            broken.body.immovable = true;
+            broken.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
+            broken.body.customSeparateY = true;
+            broken.body.allowGravity = false;
+            this.brokenBlocks.setAll('checkWorldBounds', true);//边界检测
+            this.brokenBlocks.setAll('outOfBoundsKill', true);//超出边界自动kill
+        }else if(type=='spring'){
+            if(Math.random()<0.9){
+                return false;
+            }
+            var spring = this.springs.getFirstDead(true, x, y, 'spring0');
+            spring.anchor.set(0.5, 1);
+            game.physics.arcade.enable(spring);
+            spring.body.immovable = true;
+            spring.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
+            spring.body.customSeparateY = true;
+            spring.body.allowGravity = false;
+            return true;
+        }else if(type=='springAfter'){
+            var spring = this.springs.getFirstDead(true, x, y, 'spring1');
+            spring.anchor.set(0.5, 1);
+            game.physics.arcade.enable(spring);
+            spring.body.immovable = true;
+            spring.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
+            spring.body.customSeparateY = true;
+            spring.body.allowGravity = false;
+        }
+    }
 
+};
+var score = function(){
+    this.bg;
+}
+score.prototype={
+    preload:function(){
+        console.log('');
+    },
+    create:function(){
+		this.physics.startSystem(Phaser.Physics.ARCADE);
+        this.physics.arcade.gravity.y = 600;
+		this.bg = this.add.tileSprite(0,0,game.width, game.height,'bg');
+        var x = constant.player==null?0:constant.player.x;
+		this.player = this.add.sprite(x, -45,'player');
+        this.player.anchor.setTo(0.5, 0);
+		this.physics.enable(this.player);
+        this.btns = this.add.group();
+        var again = this.add.button(game.width/2, 0, 'again', function(){
+			game.state.start('Game');
+            console.log("again");        
+        }, this, null, null, null,null, this.btns);
+        var options = this.add.button(game.width/2, 80, 'options', function(){
+            console.log("options");        
+        }, this, null, null, null,null, this.btns);
+        this.btns.centerY = game.height/2;
+        this.btns.centerX = game.width/2;
+        this.player.bringToTop();
+    }
+};
+game.state.add('Game', JumpGame, true);
+game.state.add('boot', boot, true);
+game.state.add('menu', menu, false);
+game.state.add('score', score, false);
 </script>
 </body>
 </html>
