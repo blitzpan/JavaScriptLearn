@@ -5,14 +5,9 @@
 	<title>html5 涂鸦跳跃</title>
 	<script src="../js/phaser2.6.1.min.js"></script>
 </head>
-<style>
-	body,p,div{ margin: 0; padding: 0; }
-	canvas{ margin:0 auto;}
-</style>
 <body>
-<div id="game"></div>
 <script>
-var game = new Phaser.Game(310,480,Phaser.AUTO,'game');
+var game = new Phaser.Game(310,480,Phaser.AUTO,'');
 var constant={
     'player':null,
     'broken.downS':50,//the broken y speed
@@ -21,9 +16,7 @@ var constant={
     'upS' : -(game.height-50),//the player up speed
     'spring.ups':-(game.height-50 + 200),//the speed when player touched spring
     'trampoline.ups':-(game.height-50 + 400),//the speed when player touched trampoline
-    'helicopter.ups':-(game.height-50 + 600),//the speed when player touched trampoline
-    'rocket.ups':-(game.height-50 + 800),//the speed when player touched trampoline
-    'direct':'right',
+
 }
 var boot = function(){
     this.preload = function(){
@@ -56,16 +49,6 @@ var menu = function(){
 		this.load.image('trampoline0','assets/img/trampoline0.png');   
 		this.load.image('trampoline1','assets/img/trampoline1.png');   
 		this.load.image('rocket','assets/img/rocket.png');   
-		this.load.image('helicopter','assets/img/helicopter.png');   
-
-        this.load.audio('jumpSound', 'assets/sounds/jump.mp3');//跳
-        this.load.audio('trampolineSound', 'assets/sounds/trampoline.mp3');//蹦床
-        this.load.audio('lomise', 'assets/sounds/lomise.mp3');//断了
-        this.load.audio('falldown', 'assets/sounds/falldown.mp3');//掉下来
-        this.load.audio('propeller', 'assets/sounds/propeller.mp3');//直升机
-        this.load.audio('rocketSound', 'assets/sounds/rocket.mp3');//火箭
-        this.load.audio('springshoes', 'assets/sounds/springshoes.mp3');//弹簧
-        this.load.audio('jumpSound', 'assets/sounds/jump.mp3');
 		
 	},
     this.create = function(){
@@ -124,14 +107,10 @@ JumpGame.prototype = {
         this.player = this.add.sprite(game.width/2, 200,'player');
         this.player.anchor.setTo(0.5, 0);
         constant.player = this.player;
-        var youFan = this.player.animations.add('youFan', [4,5,6,7,8,9,10,11,12], 12, false, true);
-        var youRocket = this.player.animations.add('youRocket', [13,14,15,16,17,18,19,20,21,22,23], 12, false, true);
-        var youHelicopter = this.player.animations.add('youHelicopter', [24,25,26,27], 4, false, true);
-        var youYun = this.player.animations.add('youYun', [28,29,30], 12, false, true);
-        youFan.onComplete.add(this.setPlayerFace, this);
-        youRocket.onComplete.add(this.setPlayerFace, this);
-        youHelicopter.onComplete.add(this.setPlayerFace, this);
-        youYun.onComplete.add(this.setPlayerFace, this);
+        this.player.animations.add('youFan', [4,5,6,7,8,9,10,11,12], 12, false, true);
+        this.player.animations.add('youRocket', [13,14,15,16,17,18,19,20,21,22,23], 12, false, true);
+        this.player.animations.add('youHele', [24,25,26,27], 12, false, true);
+        this.player.animations.add('youYun', [28,29,30], 12, false, true);
 		this.blocks = this.add.group();//障碍的集合
 		this.blocks.enableBody = true;
 
@@ -142,15 +121,6 @@ JumpGame.prototype = {
         this.trampolines = this.add.group();//蹦床的集合
 
         this.rockets = this.add.group();//火箭的集合
-        this.helicopters = this.add.group();//火箭的集合
-
-        this.jumpSound = this.add.audio('jumpSound');//跳
-        this.trampolineSound = this.add.audio('trampolineSound');//蹦床
-        this.lomise = this.add.audio('lomise');//断了
-        this.falldown = this.add.audio('falldown');//掉下来
-        this.propeller = this.add.audio('propeller');//直升机
-        this.rocketSound = this.add.audio('rocketSound');//火箭
-        this.springshoes = this.add.audio('springshoes');//弹簧
 
 		this.initGame();
         
@@ -193,12 +163,6 @@ JumpGame.prototype = {
                     spring.kill();
                 }
             }, this);
-            this.helicopters.forEachExists(function(spring){
-                spring.y += height;
-                if(spring.y > game.height){
-                    spring.kill();
-                }
-            }, this);
         }
 		if(this.player.body.touching.down){
             console.log('down');
@@ -216,8 +180,6 @@ JumpGame.prototype = {
 		this.physics.arcade.collide(this.player, this.brokenBlocks, this.collideBroken, null, this);
 		this.physics.arcade.collide(this.player, this.springs, this.collideSpring, null, this);
 		this.physics.arcade.collide(this.player, this.trampolines, this.collideTrampoline, null, this);
-		this.physics.arcade.collide(this.player, this.rockets, this.collideRocket, null, this);
-		this.physics.arcade.collide(this.player, this.helicopters, this.collideHelicopter, null, this);
         this.player.body.velocity.x = 0;
         if(this.cursors.left.isDown){
             this.player.body.velocity.x = -150;
@@ -228,7 +190,6 @@ JumpGame.prototype = {
     },
     collideNormal: function (player, block) {
         if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
-            this.jumpSound.play();
             player.body.velocity.y = constant['upS'];
         }else if(player.body.velocity.y>=0){
 //            console.log("异常" + (player.body.bottom - block.body.top) + '--' + player.body.velocity.y);
@@ -236,7 +197,6 @@ JumpGame.prototype = {
     },
     collideBroken:function(player, block){
         if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
-            this.lomise.play();
             block.play('play');
             block.body.velocity.y = player.body.velocity.y + 5;
         }else if(player.body.velocity.y>=0){
@@ -245,7 +205,6 @@ JumpGame.prototype = {
     },
     collideSpring: function (player, block) {
         if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
-            this.springshoes.play();
             player.body.velocity.y = constant['spring.ups'];
             block.loadTexture('spring1', 0, true);
         }else if(player.body.velocity.y>=0){
@@ -254,34 +213,12 @@ JumpGame.prototype = {
     },
     collideTrampoline: function (player, block) {
         if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
-            this.trampolineSound.play();
             player.body.velocity.y = constant['trampoline.ups'];
             block.loadTexture('trampoline1', 0, true);
-            player.play('youFan');
+            player.play('youFan'e);
         }else if(player.body.velocity.y>=0){
 //            console.log("异常" + (player.body.bottom - block.body.top) + '--' + player.body.velocity.y);
         }
-    },                 
-
-    collideRocket: function (player, block) {
-//        if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
-            this.rocketSound.play();
-            player.body.velocity.y = constant['rocket.ups'];
-            block.kill();
-            player.play('youRocket');
-//        }else if(player.body.velocity.y>=0){
-//            console.log("异常" + (player.body.bottom - block.body.top) + '--' + player.body.velocity.y);
-//        }
-    },                 
-    collideHelicopter: function (player, block) {
-//        if ( player.body.velocity.y >= 0 && (player.body.bottom - block.body.top)<8 ){
-            this.propeller.play();
-            player.body.velocity.y = constant['helicopter.ups'];
-            block.kill();
-            player.play('youHelicopter');
-//        }else if(player.body.velocity.y>=0){
-//            console.log("异常" + (player.body.bottom - block.body.top) + '--' + player.body.velocity.y);
-//        }
     },                 
 	initGame:function(){
 		var c = game.height / 50;
@@ -296,7 +233,7 @@ JumpGame.prototype = {
         if(this.score < 100){//normal
             this.createBlockByType(x, y, 'normal');
             this.createBlockByType(x, y-constant['block.height'], 'spring');
-        }else{//normal + broken
+        }else if(this.score < 200){//normal + broken
             this.createBlockByType(x, y, 'normal');
             if(this.createBlockByType(x, y-constant['block.height'], 'spring')){//create spring
             
@@ -304,6 +241,10 @@ JumpGame.prototype = {
                 x = Math.random() * (game.width - 57);
                 this.createBlockByType(x, y, 'broken');
             }
+        }else{
+            this.createBlockByType(x, y, 'normal');
+            x = Math.random() * (game.width - 57);
+            this.createBlockByType(x, y, 'broken');
         }
         this.scoreText.bringToTop();
         this.player.bringToTop();
@@ -345,7 +286,7 @@ JumpGame.prototype = {
                 return false;
             }
             var r = Math.random();
-            if(r<0.4){//spring
+            if(r<0){//spring
                 var spring = this.springs.getFirstDead(true, x, y, 'spring0');
                 spring.anchor.set(0.5, 1);
                 game.physics.arcade.enable(spring);
@@ -353,7 +294,7 @@ JumpGame.prototype = {
                 spring.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
                 spring.body.customSeparateY = true;
                 spring.body.allowGravity = false;
-            }else if(r<0.7){//trampoline
+            }else if(r<0){//trampoline
                 var spring = this.trampolines.getFirstDead(true, x, y, 'trampoline0');
                 spring.anchor.set(0.5, 1);
                 game.physics.arcade.enable(spring);
@@ -361,7 +302,7 @@ JumpGame.prototype = {
                 spring.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
                 spring.body.customSeparateY = true;
                 spring.body.allowGravity = false;                      
-            }else if(r<0.9){//rocket
+            }else{//rocket
                 var spring = this.rockets.getFirstDead(true, x, y, 'rocket');
                 spring.anchor.set(0.5, 1);
                 game.physics.arcade.enable(spring);
@@ -369,29 +310,8 @@ JumpGame.prototype = {
                 spring.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
                 spring.body.customSeparateY = true;
                 spring.body.allowGravity = false;           
-            }else{
-                var spring = this.helicopters.getFirstDead(true, x, y, 'helicopter');
-                spring.anchor.set(0.5, 1);
-                game.physics.arcade.enable(spring);
-                spring.body.immovable = true;
-                spring.body.customSeparateX = true;//设置了此项，那么两个物体碰撞后不会反弹
-                spring.body.customSeparateY = true;
-                spring.body.allowGravity = false;                      
             }
             return true;
-        }
-    },
-    setPlayerFace:function(){
-        if(constant.direct == 'left'){
-            this.player.frame = 0;
-        }else{
-            this.player.frame = 1;
-        }
-        if(this.propeller.isPlaying){
-            this.propeller.stop();
-        }
-        if(this.rocketSound.isPlaying){
-            this.rocketSound.stop();
         }
     }
 

@@ -5,14 +5,9 @@
 	<title>html5 涂鸦跳跃</title>
 	<script src="../js/phaser2.6.1.min.js"></script>
 </head>
-<style>
-	body,p,div{ margin: 0; padding: 0; }
-	canvas{ margin:0 auto;}
-</style>
 <body>
-<div id="game"></div>
 <script>
-var game = new Phaser.Game(310,480,Phaser.AUTO,'game');
+var game = new Phaser.Game(310,480,Phaser.AUTO,'');
 var constant={
     'player':null,
     'broken.downS':50,//the broken y speed
@@ -126,7 +121,7 @@ JumpGame.prototype = {
         constant.player = this.player;
         var youFan = this.player.animations.add('youFan', [4,5,6,7,8,9,10,11,12], 12, false, true);
         var youRocket = this.player.animations.add('youRocket', [13,14,15,16,17,18,19,20,21,22,23], 12, false, true);
-        var youHelicopter = this.player.animations.add('youHelicopter', [24,25,26,27], 4, false, true);
+        var youHelicopter = this.player.animations.add('youHelicopter', [24,25,26,27], 12, false, true);
         var youYun = this.player.animations.add('youYun', [28,29,30], 12, false, true);
         youFan.onComplete.add(this.setPlayerFace, this);
         youRocket.onComplete.add(this.setPlayerFace, this);
